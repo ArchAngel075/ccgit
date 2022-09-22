@@ -36,7 +36,11 @@ end
 
 
 local function getBranches(owner, repo)
-    return make(owner,repo,"repos","branches")
+    local fetch = make(owner,repo,"repos","branches")
+    if(fetch.getResponseCode() ~= -1) then
+        return fetch
+    else error("unable to fetch branches for owner:".. owner .."| repo:".. repo)
+    end
 end
 
 local function fetchContent(path,owner,repo)
@@ -112,6 +116,19 @@ if(_args[1] == "fetch" and _args[2] and _args[3] and _args[4]) then
     local repo = _args[3]
     local path = _args[4]
     downloadContent(path,nil,ower,repo)
+elseif(_args[1] == "branches" and _args[2] and _args[3]) then
+    local owner = _args[2]
+    local repo = _args[3]
+    local fetch = getBranches(owner, repo)
+    print("-----RESULTS-----")
+    for k,v in pairs(fetch.json) do
+        if(type(v) =="table") then
+            print(v.name)
+        else
+            print(k,v)
+        end
+    end
+    print("----------")
 else
     print("unknown command", unpack(_args))
     print("accepted :")
