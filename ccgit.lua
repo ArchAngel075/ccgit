@@ -9,7 +9,6 @@ function _getResponseCode() return -1 end
 
 function make(owner,repo,resource,path,params,method)
     local path = _baseurl .. "/" .. (resource) .. "/" .. (owner or _owner) .. "/" .. (repo or _repo) .. "/" .. (path)
-    print("path is [",path,"]")
     local header = {}
     --copy in base header requirements
     for k,v in pairs(_baseheader) do
