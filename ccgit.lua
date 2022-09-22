@@ -163,8 +163,8 @@ local _args = {...}
 if(_args[1] == "fetch" and _args[2] and _args[3] and _args[4]) then
     local owner = _args[2]
     local repo = _args[3]
-    local path = _args[4]
-    downloadContent(path,nil,ower,repo)
+    local path = _args[4] or repo
+    downloadContent(path,nil,owner,repo)
     checkRateLimit()
 elseif(_args[1] == "branches" and _args[2] and _args[3]) then
     local owner = _args[2]
