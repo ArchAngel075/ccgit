@@ -41,18 +41,18 @@ function fetchContent(path,owner,repo)
         fetch = make(owner,repo,"repos","contents/")
     end
     if(fetch.getResponseCode() ~= -1) then
-        print("-----RESULTS-----")
-        for k,v in pairs(fetch.json) do
-            if(type(v) =="table") then
-                print(k)
-                for i,o in pairs(v) do
-                    print("",i,o)
-                end
-            else
-                print(k,v)
-            end
-        end
-        print("----------")
+        -- print("-----RESULTS-----")
+        -- for k,v in pairs(fetch.json) do
+        --     if(type(v) =="table") then
+        --         print(k)
+        --         for i,o in pairs(v) do
+        --             print("",i,o)
+        --         end
+        --     else
+        --         print(k,v)
+        --     end
+        -- end
+        -- print("----------")
     else
         print("got",fetch.getResponseCode())
     end
@@ -85,7 +85,7 @@ function downloadContent(root,path,owner,repo)
                         filepath = root .."/".. filepath;
                     end
                     print("","","...downloading '" .. resource.name .. "'",resource.size)
-                    local download,written = downloadFile(resource.download_url, filepath);
+                    local download,written = downloadFile(resource.download_url, filepath, true);
                     print("","","success: ",download, "written: ",written)
                 end
             else
