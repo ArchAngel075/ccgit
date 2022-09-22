@@ -1,13 +1,21 @@
-_baseurl = "https://api.github.com"
-_token = "1x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"
-_baseheader = {Authorization=_token, Accept="application/vnd.github.v3+json"}
+local _baseurl = "https://api.github.com"
+local _token = "SECRET";
+if(fs.exists("_token")) then
+    local _tokenFile = fs.open("_token","r");
+    _token = _tokenFile.readAll();
+    _tokenFile.close()
+else
+    error("please provide GIT HUB API PERSONALISED TOKEN (PAT) in a file _token on the root directory.")
+end
 
-_owner = "ArchAngel075"
-_repo = "ccgit"
+local _baseheader = {Authorization=_token, Accept="application/vnd.github.v3+json"}
 
-function _getResponseCode() return -1 end
+local _owner = "ArchAngel075"
+local _repo = "ccgit"
 
-function make(owner,repo,resource,path,params,method)
+local function _getResponseCode() return -1 end
+
+local function make(owner,repo,resource,path,params,method)
     local path = _baseurl .. "/" .. (resource) .. "/" .. (owner or _owner) .. "/" .. (repo or _repo) .. "/" .. (path)
     local header = {}
     --copy in base header requirements
@@ -27,11 +35,11 @@ function make(owner,repo,resource,path,params,method)
 end
 
 
-function getBranches(owner, repo)
+local function getBranches(owner, repo)
     return make(owner,repo,"repos","branches")
 end
 
-function fetchContent(path,owner,repo)
+local function fetchContent(path,owner,repo)
     local fetch = false
     if(path) then
         fetch = make(owner,repo,"repos","contents/" .. (path))
@@ -57,7 +65,7 @@ function fetchContent(path,owner,repo)
     return fetch;
 end
 
-function downloadFile(url,to,force_overwrite)
+local function downloadFile(url,to,force_overwrite)
     local force_overwrite = force_overwrite or false,0
     if(fs.exists(to) and not force_overwrite) then return false,0 end
     local handle = fs.open(to,"w")
@@ -70,7 +78,7 @@ function downloadFile(url,to,force_overwrite)
     return true,fs.getSize(to);
 end
 
-function downloadContent(root,path,owner,repo)
+local function downloadContent(root,path,owner,repo)
     
     local fetch = fetchContent(path,owner,repo)
     if(fetch.getResponseCode() ~= -1) then
