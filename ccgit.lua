@@ -34,6 +34,25 @@ local function make(owner,repo,resource,path,params,method)
     return req
 end
 
+local function makeRaw(url,params,method)
+    local path = url
+    local header = {}
+    --copy in base header requirements
+    for k,v in pairs(_baseheader) do
+        header[k] = v
+    end
+    --copy in and overwrite with params
+    for k,v in pairs(params or {}) do
+        header[k] = v
+    end
+    --make request and return
+    local req = http[method or "get"](path, header) or {getResponseCode = _getResponseCode }
+    if(req.getResponseCode() ~= -1) then
+        req.json = textutils.unserialiseJSON(req.readAll());
+    end
+    return req
+end
+
 
 local function getBranches(owner, repo)
     local fetch = make(owner,repo,"repos","branches")
@@ -69,6 +88,15 @@ local function fetchContent(path,owner,repo)
     return fetch;
 end
 
+local function checkRateLimit()
+    local path = _baseurl .. "/rate_limit"
+    local fetch = makeRaw(path)
+    print(fetch.getResponseCode())
+    print(fetch.readLine())
+    print(fetch.json.resources.core.used,"of",fetch.json.resources.core.limit, "with",fetch.json.resources.core.remaining,"remaining")
+    print("resets in ",fetch.json.resources.core.reset)
+end
+
 local function downloadFile(url,to,force_overwrite)
     local force_overwrite = force_overwrite or false,0
     if(fs.exists(to) and not force_overwrite) then return false,0 end
@@ -82,26 +110,47 @@ local function downloadFile(url,to,force_overwrite)
     return true,fs.getSize(to);
 end
 
+local function downloadRecursively(tree,root,sub)
+    --print("root is",root);
+    for k,resource in pairs(tree) do
+        if(resource.type == "file") then
+            local filepath = resource.name
+            if(root) then
+                filepath = root .."/".. filepath;
+            end
+            print("","","...downloading '" .. filepath .. "'",resource.size)
+            local download,written = downloadFile(resource.download_url, filepath, true);
+            print("","","success: ",download, "written: ",written)
+        elseif(resource.type == "blob") then
+            print("","","...downloading '" .. root .. resource.path .. "'",resource.size)
+            local download,written = downloadFile(resource.url, root .. resource.path, true);
+            print("","","success: ",download, "written: ",written)
+        elseif(resource.type == "dir") then
+            local subfetch = makeRaw(resource.git_url)
+            local subtree = subfetch.json.tree
+            local filepath = resource.path .. "/"
+            if(root) then
+                filepath = root .."/".. filepath;
+            end
+            downloadRecursively(subtree,filepath,true)
+        elseif(resource.type == "tree") then
+            local subfetch = makeRaw(resource.url)
+            local subtree = subfetch.json.tree
+            local filepath = resource.path
+            if(root) then
+                filepath = root .. filepath;
+            end
+            downloadRecursively(subtree,filepath .. "/",true)
+        end
+    end
+end
+
 local function downloadContent(root,path,owner,repo)
     
     local fetch = fetchContent(path,owner,repo)
     if(fetch.getResponseCode() ~= -1) then
         print("-----DOWNLOADING RESULTS-----")
-        for k,resource in pairs(fetch.json) do
-            if(type(resource) =="table") then
-                if(resource.type == "file") then
-                    local filepath = resource.name
-                    if(root) then
-                        filepath = root .."/".. filepath;
-                    end
-                    print("","","...downloading '" .. resource.name .. "'",resource.size)
-                    local download,written = downloadFile(resource.download_url, filepath, true);
-                    print("","","success: ",download, "written: ",written)
-                end
-            else
-                print(k,resource)
-            end
-        end
+        downloadRecursively(fetch.json,root)
         print("----------")
     else
         print("got",fetch.getResponseCode())
@@ -116,9 +165,11 @@ if(_args[1] == "fetch" and _args[2] and _args[3] and _args[4]) then
     local repo = _args[3]
     local path = _args[4]
     downloadContent(path,nil,ower,repo)
+    checkRateLimit()
 elseif(_args[1] == "branches" and _args[2] and _args[3]) then
     local owner = _args[2]
     local repo = _args[3]
+    checkRateLimit()
     local fetch = getBranches(owner, repo)
     print("-----RESULTS-----")
     for k,v in pairs(fetch.json) do
@@ -129,6 +180,8 @@ elseif(_args[1] == "branches" and _args[2] and _args[3]) then
         end
     end
     print("----------")
+elseif(_args[1] == "check") then
+    checkRateLimit()
 else
     print("unknown command", unpack(_args))
     print("accepted :")
