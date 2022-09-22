@@ -1,4 +1,3 @@
-print("Hello gitter")
 _baseurl = "https://api.github.com"
 _token = "1x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"
 _baseheader = {Authorization=_token, Accept="application/vnd.github.v3+json"}
@@ -98,4 +97,19 @@ function downloadContent(root,path,owner,repo)
     end
 end
 
-local req = downloadContent("ccgit")
+
+
+local _args = {...}
+if(_args[1] == "fetch" and _args[2] and _args[3] and _args[4]) then
+    local owner = _args[2]
+    local repo = _args[3]
+    local path = _args[4]
+    downloadContent(path,nil,ower,repo)
+else
+    print("unknown command", unpack(_args))
+    print("accepted :")
+    print("fetch {owner} {repo} {path}")
+    print("","{owner}","the owner of the repo")
+    print("","{repo}","the repo to fetch (main branch only FOR NOW)")
+    print("","{path}","the local path to save files to")
+end
